@@ -69,7 +69,7 @@ func (a *App) hashUserID(userID int64) string {
 }
 
 func (a *App) send(c tgbotapi.Chattable) {
-	if _, err := a.send(c); err != nil {
+	if _, err := a.bot.Send(c); err != nil {
 		log.Println("bot send error:", err)
 	}
 }
@@ -959,7 +959,7 @@ func (a *App) sendNominationsList(chatID, userID, roomID int64) error {
 	}
 
 	if len(nominations) == 0 {
-		_, sendErr := a.send(tgbotapi.NewMessage(chatID, "В этой комнате пока нет номинаций."))
+		_, sendErr := a.bot.Send(tgbotapi.NewMessage(chatID, "В этой комнате пока нет номинаций."))
 		return sendErr
 	}
 
@@ -996,7 +996,7 @@ func (a *App) sendNominationsList(chatID, userID, roomID int64) error {
 	kb := tgbotapi.NewInlineKeyboardMarkup(buttons...)
 	msg := tgbotapi.NewMessage(chatID, sb.String())
 	msg.ReplyMarkup = kb
-	_, err = a.send(msg)
+	_, err = a.bot.Send(msg)
 	return err
 }
 
@@ -1038,7 +1038,7 @@ func (a *App) sendNominees(chatID, userID, nominationID int64) error {
 		)
 		msg := tgbotapi.NewMessage(chatID, "Управление номинацией:")
 		msg.ReplyMarkup = kb
-		if _, err := a.send(msg); err != nil {
+		if _, err := a.bot.Send(msg); err != nil {
 			log.Println("send addnom button:", err)
 		}
 	}
@@ -1050,7 +1050,7 @@ func (a *App) sendNominees(chatID, userID, nominationID int64) error {
 				tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад к номинациям", "back:nominations"),
 			),
 		)
-		_, sendErr := a.send(m)
+		_, sendErr := a.bot.Send(m)
 		return sendErr
 	}
 
@@ -1084,20 +1084,20 @@ func (a *App) sendNominees(chatID, userID, nominationID int64) error {
 			photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileID(n.MediaFileID))
 			photo.Caption = caption
 			photo.ReplyMarkup = kb
-			if _, err := a.send(photo); err != nil {
+			if _, err := a.bot.Send(photo); err != nil {
 				log.Println("send nominee photo:", err)
 			}
 		} else if n.MediaFileID != "" && n.MediaType == "video" {
 			video := tgbotapi.NewVideo(chatID, tgbotapi.FileID(n.MediaFileID))
 			video.Caption = caption
 			video.ReplyMarkup = kb
-			if _, err := a.send(video); err != nil {
+			if _, err := a.bot.Send(video); err != nil {
 				log.Println("send nominee video:", err)
 			}
 		} else {
 			msg := tgbotapi.NewMessage(chatID, caption)
 			msg.ReplyMarkup = kb
-			if _, err := a.send(msg); err != nil {
+			if _, err := a.bot.Send(msg); err != nil {
 				log.Println("send nominee text:", err)
 			}
 		}
