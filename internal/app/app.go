@@ -13,8 +13,8 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"tg-vote-bot/internal/session"
-	"tg-vote-bot/internal/storage"
+	"github.com/maaaruch/tg-vote-bot/internal/session"
+	"github.com/maaaruch/tg-vote-bot/internal/storage"
 )
 
 type App struct {
