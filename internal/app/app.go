@@ -68,6 +68,12 @@ func (a *App) hashUserID(userID int64) string {
 	return hex.EncodeToString(sum[:])
 }
 
+func (a *App) send(c tgbotapi.Chattable) {
+	if _, err := a.bot.Send(c); err != nil {
+		log.Println("bot send error:", err)
+	}
+}
+
 // ---------- Updates ----------
 
 func (a *App) handleMessage(msg *tgbotapi.Message) {
@@ -107,10 +113,10 @@ func (a *App) handleMessage(msg *tgbotapi.Message) {
 				"/results nominationID – результаты одной номинации (только автор комнаты)"
 			photo := tgbotapi.NewPhoto(msg.Chat.ID, tgbotapi.FilePath("assets/start.jpg"))
 			photo.Caption = text
-			a.bot.Send(photo)
+			a.send(photo)
 
 		case "help":
-			a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Смотри /start – там всё расписано 🙂"))
+			a.send(tgbotapi.NewMessage(msg.Chat.ID, "Смотри /start – там всё расписано 🙂"))
 
 		case "create_room":
 			a.handleCreateRoom(msg)
@@ -143,7 +149,7 @@ func (a *App) handleMessage(msg *tgbotapi.Message) {
 			a.handleResults(msg)
 
 		default:
-			a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Не знаю такой команды. Попробуй /start"))
+			a.send(tgbotapi.NewMessage(msg.Chat.ID, "Не знаю такой команды. Попробуй /start"))
 		}
 		return
 	}
