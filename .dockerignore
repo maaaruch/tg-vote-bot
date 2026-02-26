@@ -1,0 +1,14 @@
+.git
+.github
+.idea
+.vscode
+
+.env
+
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+*.log
+.DS_Store

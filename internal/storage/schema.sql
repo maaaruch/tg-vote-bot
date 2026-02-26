@@ -1,0 +1,31 @@
+CREATE TABLE IF NOT EXISTS rooms (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_user_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    password TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS nominations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_id INTEGER NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT
+);
+
+CREATE TABLE IF NOT EXISTS nominees (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nomination_id INTEGER NOT NULL REFERENCES nominations(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    media_file_id TEXT,
+    media_type TEXT
+);
+
+CREATE TABLE IF NOT EXISTS votes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_hash TEXT NOT NULL,
+    nomination_id INTEGER NOT NULL REFERENCES nominations(id) ON DELETE CASCADE,
+    nominee_id INTEGER NOT NULL REFERENCES nominees(id) ON DELETE CASCADE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_hash, nomination_id)
+);

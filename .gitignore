@@ -1,0 +1,24 @@
+# binaries
+/bin/
+*.exe
+*.out
+*.test
+
+# env
+.env
+
+# editor/OS
+.DS_Store
+.idea/
+.vscode/
+
+# Go
+**/*.swp
+
+# SQLite
+*.db
+/data/
+!data/.gitkeep
+
+# logs
+*.log
