@@ -1,12 +1,8 @@
 # tg-vote-bot
 
-<p align="left">
-  <a href="https://github.com/maaaruch/tg-vote-bot/actions/workflows/ci.yml">
-    <img alt="CI" src="https://github.com/maaaruch/tg-vote-bot/actions/workflows/ci.yml/badge.svg" />
-  </a>
-  <img alt="Go" src="https://img.shields.io/badge/go-1.22+-blue" />
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-green" />
-</p>
+[![CI](https://github.com/maaaruch/tg-vote-bot/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/maaaruch/tg-vote-bot/actions/workflows/ci.yml)
+![Go](https://img.shields.io/badge/go-1.22+-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 Telegram-бот на Go для голосований по номинациям в **комнатах**.
 

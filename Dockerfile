@@ -32,7 +32,6 @@ ENV DB_PATH="/app/data/data.db"
 ENV VOTE_SALT="dev_salt_change_me"
 ENV BOT_DEBUG="false"
 
-# персистим только БД
 VOLUME ["/app/data"]
 
 CMD ["./bot"]

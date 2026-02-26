@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"tg-vote-bot/internal/domain"
+	"github.com/maaaruch/tg-vote-bot/internal/domain"
 )
 
 //go:embed schema.sql

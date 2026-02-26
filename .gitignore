@@ -1,24 +1,24 @@
-# binaries
-/bin/
+# secrets
+.env
+
+# runtime data (keep dir)
+data/*
+!data/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
+
+# build artifacts
+bin/
 *.exe
 *.out
 *.test
 
-# env
-.env
-
-# editor/OS
+# editor / os
 .DS_Store
 .idea/
 .vscode/
-
-# Go
 **/*.swp
-
-# SQLite
-*.db
-/data/
-!data/.gitkeep
 
 # logs
 *.log
