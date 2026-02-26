@@ -13,8 +13,8 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	_ "github.com/mattn/go-sqlite3"
 
-	"tg-vote-bot/internal/app"
-	"tg-vote-bot/internal/storage"
+	"github.com/maaaruch/tg-vote-bot/internal/app"
+	"github.com/maaaruch/tg-vote-bot/internal/storage"
 )
 
 func main() {
