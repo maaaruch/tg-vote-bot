@@ -69,7 +69,7 @@ func (a *App) hashUserID(userID int64) string {
 }
 
 func (a *App) send(c tgbotapi.Chattable) {
-	if _, err := a.bot.Send(c); err != nil {
+	if _, err := a.send(c); err != nil {
 		log.Println("bot send error:", err)
 	}
 }
@@ -156,7 +156,7 @@ func (a *App) handleMessage(msg *tgbotapi.Message) {
 
 	// 4) просто текст
 	if strings.Contains(strings.ToLower(msg.Text), "номинац") {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Чтобы увидеть номинации в комнате – используй команду /nominations (после /room)."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Чтобы увидеть номинации в комнате – используй команду /nominations (после /room)."))
 	}
 }
 
@@ -178,7 +178,7 @@ func (a *App) handleCallback(cq *tgbotapi.CallbackQuery) {
 		sess.CreatingNomineeForNominationID = 0
 
 		if sess.ActiveRoomID == 0 {
-			a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Сначала зайди в комнату: /room ID Пароль"))
+			a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Сначала зайди в комнату: /room ID Пароль"))
 			return
 		}
 		if err := a.sendNominationsList(cq.Message.Chat.ID, userID, sess.ActiveRoomID); err != nil {
@@ -199,7 +199,7 @@ func (a *App) handleCallback(cq *tgbotapi.CallbackQuery) {
 		roomID, err := a.store.GetNominationRoomID(nomID)
 		if err != nil {
 			if errors.Is(err, storage.ErrNotFound) {
-				a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Эта номинация больше не существует."))
+				a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Эта номинация больше не существует."))
 			} else {
 				log.Println("get nomination room:", err)
 			}
@@ -207,7 +207,7 @@ func (a *App) handleCallback(cq *tgbotapi.CallbackQuery) {
 		}
 
 		if sess.ActiveRoomID != roomID {
-			a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "У тебя нет доступа к этой комнате. Сначала зайди в неё командой /room."))
+			a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "У тебя нет доступа к этой комнате. Сначала зайди в неё командой /room."))
 			return
 		}
 
@@ -226,7 +226,7 @@ func (a *App) handleCallback(cq *tgbotapi.CallbackQuery) {
 		nominationID, roomID, err := a.store.GetNomineeNominationAndRoom(nomineeID)
 		if err != nil {
 			if errors.Is(err, storage.ErrNotFound) {
-				a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Этот номинант больше не существует."))
+				a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Этот номинант больше не существует."))
 			} else {
 				log.Println("get nominee nomination/room:", err)
 			}
@@ -234,14 +234,14 @@ func (a *App) handleCallback(cq *tgbotapi.CallbackQuery) {
 		}
 
 		if sess.ActiveRoomID != roomID {
-			a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "У тебя нет доступа к этой комнате. Сначала зайди в неё командой /room."))
+			a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "У тебя нет доступа к этой комнате. Сначала зайди в неё командой /room."))
 			return
 		}
 
 		userHash := a.hashUserID(userID)
 		if err := a.store.RecordVote(userHash, nominationID, nomineeID, time.Now()); err != nil {
 			log.Println("record vote:", err)
-			a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Что-то пошло не так, попробуй ещё раз."))
+			a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Что-то пошло не так, попробуй ещё раз."))
 			return
 		}
 
@@ -253,7 +253,7 @@ func (a *App) handleCallback(cq *tgbotapi.CallbackQuery) {
 			name = "выбранного номинанта"
 		}
 		text := fmt.Sprintf("Голос принят! Ты проголосовал за: %s", name)
-		a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, text))
+		a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, text))
 
 		// сразу снова показываем список номинаций, чтобы не нужно было листать вверх
 		if sess.ActiveRoomID != 0 {
@@ -273,10 +273,10 @@ func (a *App) handleCallback(cq *tgbotapi.CallbackQuery) {
 		roomID, err := a.store.GetNominationRoomID(nominationID)
 		if err != nil {
 			if errors.Is(err, storage.ErrNotFound) {
-				a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Номинация не найдена."))
+				a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Номинация не найдена."))
 			} else {
 				log.Println("res_nom get room:", err)
-				a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Ошибка при получении номинации."))
+				a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Ошибка при получении номинации."))
 			}
 			return
 		}
@@ -284,11 +284,11 @@ func (a *App) handleCallback(cq *tgbotapi.CallbackQuery) {
 		isOwner, err := a.store.IsRoomOwner(roomID, cq.From.ID)
 		if err != nil {
 			log.Println("IsRoomOwner(res_nom):", err)
-			a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Ошибка проверки прав."))
+			a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Ошибка проверки прав."))
 			return
 		}
 		if !isOwner {
-			a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Результаты может смотреть только автор комнаты."))
+			a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Результаты может смотреть только автор комнаты."))
 			return
 		}
 
@@ -311,7 +311,7 @@ func (a *App) handleCallback(cq *tgbotapi.CallbackQuery) {
 		results, err := a.store.ResultsByNomination(nominationID)
 		if err != nil {
 			log.Println("res_nom results:", err)
-			a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Не удалось получить результаты."))
+			a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Не удалось получить результаты."))
 			return
 		}
 
@@ -339,7 +339,7 @@ func (a *App) handleCallback(cq *tgbotapi.CallbackQuery) {
 				tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад к номинациям", "back:nominations"),
 			),
 		)
-		a.bot.Send(m)
+		a.send(m)
 
 	// кнопка "➕ Добавить номинанта"
 	case strings.HasPrefix(data, "addnom:"):
@@ -352,11 +352,11 @@ func (a *App) handleCallback(cq *tgbotapi.CallbackQuery) {
 		ok, err := a.store.IsNominationOwner(nominationID, cq.From.ID)
 		if err != nil {
 			log.Println("IsNominationOwner(addnom):", err)
-			a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Ошибка проверки прав."))
+			a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Ошибка проверки прав."))
 			return
 		}
 		if !ok {
-			a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Только автор комнаты может добавлять номинантов."))
+			a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Только автор комнаты может добавлять номинантов."))
 			return
 		}
 
@@ -369,7 +369,7 @@ func (a *App) handleCallback(cq *tgbotapi.CallbackQuery) {
 				tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад к номинациям", "back:nominations"),
 			),
 		)
-		a.bot.Send(m)
+		a.send(m)
 
 	// кнопка "🖼 Медиа" у номинанта
 	case strings.HasPrefix(data, "setmedia:"):
@@ -382,11 +382,11 @@ func (a *App) handleCallback(cq *tgbotapi.CallbackQuery) {
 		ok, err := a.store.IsNomineeOwner(nomineeID, cq.From.ID)
 		if err != nil {
 			log.Println("IsNomineeOwner(setmedia):", err)
-			a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Ошибка проверки прав."))
+			a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Ошибка проверки прав."))
 			return
 		}
 		if !ok {
-			a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Только автор комнаты может менять медиа у номинантов."))
+			a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Только автор комнаты может менять медиа у номинантов."))
 			return
 		}
 
@@ -399,7 +399,7 @@ func (a *App) handleCallback(cq *tgbotapi.CallbackQuery) {
 				tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад к номинациям", "back:nominations"),
 			),
 		)
-		a.bot.Send(m)
+		a.send(m)
 
 	// кнопка "🗑 Удалить" у номинанта
 	case strings.HasPrefix(data, "delnom:"):
@@ -412,22 +412,22 @@ func (a *App) handleCallback(cq *tgbotapi.CallbackQuery) {
 		ok, err := a.store.IsNomineeOwner(nomineeID, cq.From.ID)
 		if err != nil {
 			log.Println("IsNomineeOwner(delnom):", err)
-			a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Ошибка проверки прав."))
+			a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Ошибка проверки прав."))
 			return
 		}
 		if !ok {
-			a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Только автор комнаты может удалять номинантов."))
+			a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Только автор комнаты может удалять номинантов."))
 			return
 		}
 
 		deleted, err := a.store.DeleteNominee(nomineeID)
 		if err != nil {
 			log.Println("DeleteNominee(delnom):", err)
-			a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Не удалось удалить номинанта."))
+			a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Не удалось удалить номинанта."))
 			return
 		}
 		if !deleted {
-			a.bot.Send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Номинант с таким ID не найден."))
+			a.send(tgbotapi.NewMessage(cq.Message.Chat.ID, "Номинант с таким ID не найден."))
 			return
 		}
 
@@ -438,7 +438,7 @@ func (a *App) handleCallback(cq *tgbotapi.CallbackQuery) {
 				tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад к номинациям", "back:nominations"),
 			),
 		)
-		a.bot.Send(m)
+		a.send(m)
 	}
 }
 
@@ -448,13 +448,13 @@ func (a *App) handleCreateRoom(msg *tgbotapi.Message) {
 	args := strings.TrimSpace(msg.CommandArguments())
 	if args == "" {
 		text := "Формат: /create_room Название | Пароль\n\nПример:\n/create_room Новый год 2025 | secret123"
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, text))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, text))
 		return
 	}
 
 	parts := splitPipeArgs(args, 2)
 	if len(parts) < 2 {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Нужно указать и название, и пароль через '|'"))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Нужно указать и название, и пароль через '|'"))
 		return
 	}
 
@@ -464,7 +464,7 @@ func (a *App) handleCreateRoom(msg *tgbotapi.Message) {
 	roomID, err := a.store.CreateRoom(msg.From.ID, title, password)
 	if err != nil {
 		log.Println("create_room:", err)
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Не удалось создать комнату 😔"))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Не удалось создать комнату 😔"))
 		return
 	}
 
@@ -473,19 +473,19 @@ func (a *App) handleCreateRoom(msg *tgbotapi.Message) {
 			"Поделись ID и паролем с участниками.\n"+
 			"Чтобы зайти как участник: /room %d %s",
 		roomID, title, password, roomID, password)
-	a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, text))
+	a.send(tgbotapi.NewMessage(msg.Chat.ID, text))
 }
 
 func (a *App) handleMyRooms(msg *tgbotapi.Message) {
 	rooms, err := a.store.ListRoomsByOwner(msg.From.ID)
 	if err != nil {
 		log.Println("my_rooms:", err)
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Не получилось получить список комнат."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Не получилось получить список комнат."))
 		return
 	}
 
 	if len(rooms) == 0 {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "У тебя пока нет комнат. Создай: /create_room Название | Пароль"))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "У тебя пока нет комнат. Создай: /create_room Название | Пароль"))
 		return
 	}
 
@@ -496,25 +496,25 @@ func (a *App) handleMyRooms(msg *tgbotapi.Message) {
 	}
 	sb.WriteString("\nЧтобы зайти в комнату как участник:\n/room ID Пароль")
 
-	a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, sb.String()))
+	a.send(tgbotapi.NewMessage(msg.Chat.ID, sb.String()))
 }
 
 func (a *App) handleJoinRoom(msg *tgbotapi.Message) {
 	args := strings.TrimSpace(msg.CommandArguments())
 	if args == "" {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Формат: /room ID Пароль\nПример: /room 1 secret123"))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Формат: /room ID Пароль\nПример: /room 1 secret123"))
 		return
 	}
 
 	fields := strings.Fields(args)
 	if len(fields) < 2 {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Нужно указать ID и пароль."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Нужно указать ID и пароль."))
 		return
 	}
 
 	roomID, err := strconv.ParseInt(fields[0], 10, 64)
 	if err != nil {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "ID комнаты должно быть числом."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "ID комнаты должно быть числом."))
 		return
 	}
 
@@ -523,10 +523,10 @@ func (a *App) handleJoinRoom(msg *tgbotapi.Message) {
 	room, err := a.store.GetRoomByIDAndPassword(roomID, password)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
-			a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Комната не найдена или неверный пароль."))
+			a.send(tgbotapi.NewMessage(msg.Chat.ID, "Комната не найдена или неверный пароль."))
 		} else {
 			log.Println("join room:", err)
-			a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при входе в комнату."))
+			a.send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при входе в комнату."))
 		}
 		return
 	}
@@ -535,12 +535,12 @@ func (a *App) handleJoinRoom(msg *tgbotapi.Message) {
 	sess.ActiveRoomID = room.ID
 
 	text := fmt.Sprintf("Ты вошёл в комнату: %s (ID %d)\nТеперь можешь смотреть номинации командой /nominations", room.Title, room.ID)
-	a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, text))
+	a.send(tgbotapi.NewMessage(msg.Chat.ID, text))
 }
 
 func (a *App) handleNominationsCommand(msg *tgbotapi.Message, sess *session.Session) {
 	if sess.ActiveRoomID == 0 {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Сначала зайди в комнату: /room ID Пароль"))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Сначала зайди в комнату: /room ID Пароль"))
 		return
 	}
 	if err := a.sendNominationsList(msg.Chat.ID, msg.From.ID, sess.ActiveRoomID); err != nil {
@@ -553,19 +553,19 @@ func (a *App) handleAddNomination(msg *tgbotapi.Message) {
 	if args == "" {
 		text := "Формат: /add_nomination roomID | Название | Описание(опц)\n\n" +
 			"Пример:\n/add_nomination 1 | Лучший разработчик | За топовый код"
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, text))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, text))
 		return
 	}
 
 	parts := splitPipeArgs(args, 3)
 	if len(parts) < 2 {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Нужно минимум roomID и название, разделённые '|'"))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Нужно минимум roomID и название, разделённые '|'"))
 		return
 	}
 
 	roomID, err := strconv.ParseInt(parts[0], 10, 64)
 	if err != nil {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "roomID должно быть числом."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "roomID должно быть числом."))
 		return
 	}
 
@@ -578,40 +578,40 @@ func (a *App) handleAddNomination(msg *tgbotapi.Message) {
 	ok, err := a.store.IsRoomOwner(roomID, msg.From.ID)
 	if err != nil {
 		log.Println("isRoomOwner:", err)
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка проверки прав."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка проверки прав."))
 		return
 	}
 	if !ok {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Только автор комнаты может добавлять номинации."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Только автор комнаты может добавлять номинации."))
 		return
 	}
 
 	if _, err := a.store.CreateNomination(roomID, title, description); err != nil {
 		log.Println("add_nomination:", err)
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Не получилось добавить номинацию."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Не получилось добавить номинацию."))
 		return
 	}
 
-	a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Номинация добавлена ✅\nID можно посмотреть через /nominations."))
+	a.send(tgbotapi.NewMessage(msg.Chat.ID, "Номинация добавлена ✅\nID можно посмотреть через /nominations."))
 }
 
 func (a *App) handleAddNominee(msg *tgbotapi.Message) {
 	args := strings.TrimSpace(msg.CommandArguments())
 	if args == "" {
 		text := "Формат: /add_nominee nominationID | Имя\nПример:\n/add_nominee 1 | Иван Иванов"
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, text))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, text))
 		return
 	}
 
 	parts := splitPipeArgs(args, 2)
 	if len(parts) < 2 {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Нужно указать nominationID и имя, разделённые '|'"))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Нужно указать nominationID и имя, разделённые '|'"))
 		return
 	}
 
 	nominationID, err := strconv.ParseInt(parts[0], 10, 64)
 	if err != nil {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "nominationID должно быть числом."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "nominationID должно быть числом."))
 		return
 	}
 
@@ -620,21 +620,21 @@ func (a *App) handleAddNominee(msg *tgbotapi.Message) {
 	ok, err := a.store.IsNominationOwner(nominationID, msg.From.ID)
 	if err != nil {
 		log.Println("isNominationOwner:", err)
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка проверки прав."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка проверки прав."))
 		return
 	}
 	if !ok {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Только автор комнаты может добавлять номинантов."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Только автор комнаты может добавлять номинантов."))
 		return
 	}
 
 	if _, err := a.store.CreateNominee(nominationID, name); err != nil {
 		log.Println("add_nominee:", err)
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Не получилось добавить номинанта."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Не получилось добавить номинанта."))
 		return
 	}
 
-	a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Номинант добавлен ✅\n"+
+	a.send(tgbotapi.NewMessage(msg.Chat.ID, "Номинант добавлен ✅\n"+
 		"Чтобы добавить или сменить медиа, используй команду /set_nominee_media с ID этого номинанта."))
 }
 
@@ -644,31 +644,31 @@ func (a *App) handleSetNomineeMedia(msg *tgbotapi.Message, sess *session.Session
 		text := "Формат: /set_nominee_media nomineeID\n\n" +
 			"После команды отправь одним сообщением фото или видео для этого номинанта.\n" +
 			"Команду можно вызывать повторно — медиа перезапишется."
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, text))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, text))
 		return
 	}
 
 	nomineeID, err := strconv.ParseInt(args, 10, 64)
 	if err != nil {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "nomineeID должно быть числом."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "nomineeID должно быть числом."))
 		return
 	}
 
 	ok, err := a.store.IsNomineeOwner(nomineeID, msg.From.ID)
 	if err != nil {
 		log.Println("isNomineeOwner:", err)
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка проверки прав."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка проверки прав."))
 		return
 	}
 	if !ok {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Только автор комнаты может менять медиа у номинантов."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Только автор комнаты может менять медиа у номинантов."))
 		return
 	}
 
 	sess.WaitingMediaForNomineeID = nomineeID
 	sess.CreatingNomineeForNominationID = 0
 
-	a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Ок! Теперь отправь фото или видео для этого номинанта одним следующим сообщением."))
+	a.send(tgbotapi.NewMessage(msg.Chat.ID, "Ок! Теперь отправь фото или видео для этого номинанта одним следующим сообщением."))
 }
 
 func (a *App) handleDeleteNomination(msg *tgbotapi.Message) {
@@ -676,39 +676,39 @@ func (a *App) handleDeleteNomination(msg *tgbotapi.Message) {
 	if args == "" {
 		text := "Формат: /delete_nomination nominationID\n\n" +
 			"ID номинации можно посмотреть через /nominations (они указаны в списке)."
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, text))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, text))
 		return
 	}
 
 	nominationID, err := strconv.ParseInt(args, 10, 64)
 	if err != nil {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "nominationID должно быть числом."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "nominationID должно быть числом."))
 		return
 	}
 
 	ok, err := a.store.IsNominationOwner(nominationID, msg.From.ID)
 	if err != nil {
 		log.Println("isNominationOwner(delete_nomination):", err)
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка проверки прав."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка проверки прав."))
 		return
 	}
 	if !ok {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Только автор комнаты может удалять номинации."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Только автор комнаты может удалять номинации."))
 		return
 	}
 
 	deleted, err := a.store.DeleteNomination(nominationID)
 	if err != nil {
 		log.Println("delete nomination:", err)
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Не удалось удалить номинацию."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Не удалось удалить номинацию."))
 		return
 	}
 	if !deleted {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Номинация с таким ID не найдена."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Номинация с таким ID не найдена."))
 		return
 	}
 
-	a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Номинация удалена вместе с её номинантами и голосами ✅"))
+	a.send(tgbotapi.NewMessage(msg.Chat.ID, "Номинация удалена вместе с её номинантами и голосами ✅"))
 }
 
 func (a *App) handleDeleteNominee(msg *tgbotapi.Message) {
@@ -716,39 +716,39 @@ func (a *App) handleDeleteNominee(msg *tgbotapi.Message) {
 	if args == "" {
 		text := "Формат: /delete_nominee nomineeID\n\n" +
 			"ID номинанта можно увидеть, когда смотришь номинацию — он выводится в подписи к карточке."
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, text))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, text))
 		return
 	}
 
 	nomineeID, err := strconv.ParseInt(args, 10, 64)
 	if err != nil {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "nomineeID должно быть числом."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "nomineeID должно быть числом."))
 		return
 	}
 
 	ok, err := a.store.IsNomineeOwner(nomineeID, msg.From.ID)
 	if err != nil {
 		log.Println("isNomineeOwner(delete_nominee):", err)
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка проверки прав."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка проверки прав."))
 		return
 	}
 	if !ok {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Только автор комнаты может удалять номинантов."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Только автор комнаты может удалять номинантов."))
 		return
 	}
 
 	deleted, err := a.store.DeleteNominee(nomineeID)
 	if err != nil {
 		log.Println("delete nominee:", err)
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Не удалось удалить номинанта."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Не удалось удалить номинанта."))
 		return
 	}
 	if !deleted {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Номинант с таким ID не найден."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Номинант с таким ID не найден."))
 		return
 	}
 
-	a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Номинант удалён вместе с его голосами ✅"))
+	a.send(tgbotapi.NewMessage(msg.Chat.ID, "Номинант удалён вместе с его голосами ✅"))
 }
 
 func (a *App) handleResults(msg *tgbotapi.Message) {
@@ -758,7 +758,7 @@ func (a *App) handleResults(msg *tgbotapi.Message) {
 			"/results nominationID – результаты одной номинации\n" +
 			"/results roomID nominationID – то же самое, но с явным указанием комнаты\n\n" +
 			"ID номинации можно посмотреть через /nominations."
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, text))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, text))
 		return
 	}
 
@@ -768,38 +768,38 @@ func (a *App) handleResults(msg *tgbotapi.Message) {
 	if len(args) == 1 {
 		nominationID, err = strconv.ParseInt(args[0], 10, 64)
 		if err != nil {
-			a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "nominationID должно быть числом."))
+			a.send(tgbotapi.NewMessage(msg.Chat.ID, "nominationID должно быть числом."))
 			return
 		}
 		roomID, err = a.store.GetNominationRoomID(nominationID)
 		if err != nil {
 			if errors.Is(err, storage.ErrNotFound) {
-				a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Номинация не найдена."))
+				a.send(tgbotapi.NewMessage(msg.Chat.ID, "Номинация не найдена."))
 			} else {
 				log.Println("results get room:", err)
-				a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при получении номинации."))
+				a.send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при получении номинации."))
 			}
 			return
 		}
 	} else {
 		roomID, err = strconv.ParseInt(args[0], 10, 64)
 		if err != nil {
-			a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "roomID должно быть числом."))
+			a.send(tgbotapi.NewMessage(msg.Chat.ID, "roomID должно быть числом."))
 			return
 		}
 		nominationID, err = strconv.ParseInt(args[1], 10, 64)
 		if err != nil {
-			a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "nominationID должно быть числом."))
+			a.send(tgbotapi.NewMessage(msg.Chat.ID, "nominationID должно быть числом."))
 			return
 		}
 		ok, err := a.store.CheckNominationInRoom(nominationID, roomID)
 		if err != nil {
 			log.Println("results check nom in room:", err)
-			a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при проверке номинации."))
+			a.send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при проверке номинации."))
 			return
 		}
 		if !ok {
-			a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Номинация с таким ID не принадлежит этой комнате."))
+			a.send(tgbotapi.NewMessage(msg.Chat.ID, "Номинация с таким ID не принадлежит этой комнате."))
 			return
 		}
 	}
@@ -807,11 +807,11 @@ func (a *App) handleResults(msg *tgbotapi.Message) {
 	ok, err := a.store.IsRoomOwner(roomID, msg.From.ID)
 	if err != nil {
 		log.Println("isRoomOwner(results):", err)
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка проверки прав."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка проверки прав."))
 		return
 	}
 	if !ok {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Только автор комнаты может смотреть результаты."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Только автор комнаты может смотреть результаты."))
 		return
 	}
 
@@ -834,7 +834,7 @@ func (a *App) handleResults(msg *tgbotapi.Message) {
 	results, err := a.store.ResultsByNomination(nominationID)
 	if err != nil {
 		log.Println("results nominees:", err)
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Не удалось получить результаты."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Не удалось получить результаты."))
 		return
 	}
 
@@ -856,7 +856,7 @@ func (a *App) handleResults(msg *tgbotapi.Message) {
 	if len(text) > 4000 {
 		text = text[:4000] + "\n\n(обрезано, слишком много текста)"
 	}
-	a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, text))
+	a.send(tgbotapi.NewMessage(msg.Chat.ID, text))
 }
 
 // ---------- Медиа / создание номинантов / утилиты ----------
@@ -871,11 +871,11 @@ func (a *App) handleMediaUpload(msg *tgbotapi.Message, sess *session.Session) {
 	ok, err := a.store.IsNomineeOwner(nomineeID, msg.From.ID)
 	if err != nil {
 		log.Println("isNomineeOwner(media):", err)
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка проверки прав."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка проверки прав."))
 		return
 	}
 	if !ok {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Только автор комнаты может менять медиа у номинантов."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Только автор комнаты может менять медиа у номинантов."))
 		return
 	}
 
@@ -888,17 +888,17 @@ func (a *App) handleMediaUpload(msg *tgbotapi.Message, sess *session.Session) {
 		fileID = msg.Video.FileID
 		mediaType = "video"
 	} else {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Нужно отправить фото или видео. Команда /set_nominee_media nomineeID."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Нужно отправить фото или видео. Команда /set_nominee_media nomineeID."))
 		return
 	}
 
 	if err := a.store.UpdateNomineeMedia(nomineeID, fileID, mediaType); err != nil {
 		log.Println("update nominee media:", err)
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Не удалось сохранить медиа."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Не удалось сохранить медиа."))
 		return
 	}
 
-	a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Медиа для номинанта сохранено ✅"))
+	a.send(tgbotapi.NewMessage(msg.Chat.ID, "Медиа для номинанта сохранено ✅"))
 }
 
 func (a *App) handleCreateNomineeTextStep(msg *tgbotapi.Message, sess *session.Session) {
@@ -909,7 +909,7 @@ func (a *App) handleCreateNomineeTextStep(msg *tgbotapi.Message, sess *session.S
 
 	name := strings.TrimSpace(msg.Text)
 	if name == "" {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Имя номинанта не может быть пустым. Отправь текстом имя."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Имя номинанта не может быть пустым. Отправь текстом имя."))
 		return
 	}
 
@@ -919,25 +919,25 @@ func (a *App) handleCreateNomineeTextStep(msg *tgbotapi.Message, sess *session.S
 	ok, err := a.store.IsNominationOwner(nominationID, msg.From.ID)
 	if err != nil {
 		log.Println("IsNominationOwner(create nominee text):", err)
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка проверки прав."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка проверки прав."))
 		return
 	}
 	if !ok {
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Только автор комнаты может добавлять номинантов."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Только автор комнаты может добавлять номинантов."))
 		return
 	}
 
 	nomineeID, err := a.store.CreateNominee(nominationID, name)
 	if err != nil {
 		log.Println("CreateNominee(create nominee text):", err)
-		a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Не удалось создать номинанта."))
+		a.send(tgbotapi.NewMessage(msg.Chat.ID, "Не удалось создать номинанта."))
 		return
 	}
 
 	sess.WaitingMediaForNomineeID = nomineeID
 
 	text := fmt.Sprintf("Номинант «%s» добавлен ✅\nТеперь отправь одним сообщением фото или видео для него (опционально).", name)
-	a.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, text))
+	a.send(tgbotapi.NewMessage(msg.Chat.ID, text))
 }
 
 func splitPipeArgs(s string, n int) []string {
@@ -959,7 +959,7 @@ func (a *App) sendNominationsList(chatID, userID, roomID int64) error {
 	}
 
 	if len(nominations) == 0 {
-		_, sendErr := a.bot.Send(tgbotapi.NewMessage(chatID, "В этой комнате пока нет номинаций."))
+		_, sendErr := a.send(tgbotapi.NewMessage(chatID, "В этой комнате пока нет номинаций."))
 		return sendErr
 	}
 
@@ -996,7 +996,7 @@ func (a *App) sendNominationsList(chatID, userID, roomID int64) error {
 	kb := tgbotapi.NewInlineKeyboardMarkup(buttons...)
 	msg := tgbotapi.NewMessage(chatID, sb.String())
 	msg.ReplyMarkup = kb
-	_, err = a.bot.Send(msg)
+	_, err = a.send(msg)
 	return err
 }
 
@@ -1009,7 +1009,7 @@ func (a *App) sendNominees(chatID, userID, nominationID int64) error {
 	nominees, err := a.store.ListNominees(nominationID)
 	if err != nil {
 		log.Println("ListNominees:", err)
-		a.bot.Send(tgbotapi.NewMessage(chatID, "Не удалось получить список номинантов 😔"))
+		a.send(tgbotapi.NewMessage(chatID, "Не удалось получить список номинантов 😔"))
 		return err
 	}
 
@@ -1021,9 +1021,9 @@ func (a *App) sendNominees(chatID, userID, nominationID int64) error {
 
 	// заголовок
 	if nominationName != "" {
-		a.bot.Send(tgbotapi.NewMessage(chatID, fmt.Sprintf("🏆 Номинация: %s (ID %d)", nominationName, nominationID)))
+		a.send(tgbotapi.NewMessage(chatID, fmt.Sprintf("🏆 Номинация: %s (ID %d)", nominationName, nominationID)))
 	} else {
-		a.bot.Send(tgbotapi.NewMessage(chatID, fmt.Sprintf("🏆 Номинация ID %d", nominationID)))
+		a.send(tgbotapi.NewMessage(chatID, fmt.Sprintf("🏆 Номинация ID %d", nominationID)))
 	}
 
 	// отдельная кнопка "➕ Добавить номинанта" для владельца
@@ -1038,7 +1038,7 @@ func (a *App) sendNominees(chatID, userID, nominationID int64) error {
 		)
 		msg := tgbotapi.NewMessage(chatID, "Управление номинацией:")
 		msg.ReplyMarkup = kb
-		if _, err := a.bot.Send(msg); err != nil {
+		if _, err := a.send(msg); err != nil {
 			log.Println("send addnom button:", err)
 		}
 	}
@@ -1050,7 +1050,7 @@ func (a *App) sendNominees(chatID, userID, nominationID int64) error {
 				tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад к номинациям", "back:nominations"),
 			),
 		)
-		_, sendErr := a.bot.Send(m)
+		_, sendErr := a.send(m)
 		return sendErr
 	}
 
@@ -1084,20 +1084,20 @@ func (a *App) sendNominees(chatID, userID, nominationID int64) error {
 			photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileID(n.MediaFileID))
 			photo.Caption = caption
 			photo.ReplyMarkup = kb
-			if _, err := a.bot.Send(photo); err != nil {
+			if _, err := a.send(photo); err != nil {
 				log.Println("send nominee photo:", err)
 			}
 		} else if n.MediaFileID != "" && n.MediaType == "video" {
 			video := tgbotapi.NewVideo(chatID, tgbotapi.FileID(n.MediaFileID))
 			video.Caption = caption
 			video.ReplyMarkup = kb
-			if _, err := a.bot.Send(video); err != nil {
+			if _, err := a.send(video); err != nil {
 				log.Println("send nominee video:", err)
 			}
 		} else {
 			msg := tgbotapi.NewMessage(chatID, caption)
 			msg.ReplyMarkup = kb
-			if _, err := a.bot.Send(msg); err != nil {
+			if _, err := a.send(msg); err != nil {
 				log.Println("send nominee text:", err)
 			}
 		}
