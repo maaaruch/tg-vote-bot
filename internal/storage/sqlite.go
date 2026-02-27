@@ -57,7 +57,7 @@ func (s *Store) ListRoomsByOwner(ownerID int64) ([]domain.Room, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var rooms []domain.Room
 	for rows.Next() {
@@ -114,7 +114,7 @@ func (s *Store) ListNominations(roomID int64) ([]domain.Nomination, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var noms []domain.Nomination
 	for rows.Next() {
@@ -230,7 +230,7 @@ ORDER BY id
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var nominees []domain.Nominee
 	for rows.Next() {

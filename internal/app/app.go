@@ -839,16 +839,16 @@ func (a *App) handleResults(msg *tgbotapi.Message) {
 	}
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf(
+	fmt.Fprintf(&sb,
 		"Результаты голосования\nКомната: %s (ID %d)\nНоминация: %s (ID %d)\n\n",
 		roomTitle, roomID, nominationName, nominationID,
-	))
+	)
 
 	if len(results) == 0 {
 		sb.WriteString("В этой номинации пока нет номинантов.\n")
 	} else {
 		for _, r := range results {
-			sb.WriteString(fmt.Sprintf("• %s (ID %d) — %d голос(ов)\n", r.Name, r.ID, r.Votes))
+			fmt.Fprintf(&sb, "• %s (ID %d) — %d голос(ов)\n", r.Name, r.ID, r.Votes)
 		}
 	}
 
@@ -974,7 +974,7 @@ func (a *App) sendNominationsList(chatID, userID, roomID int64) error {
 
 	sb.WriteString("Список номинаций в комнате:\n")
 	for _, n := range nominations {
-		sb.WriteString(fmt.Sprintf("ID %d — %s\n", n.ID, n.Name))
+		fmt.Fprintf(&sb, "ID %d — %s\n", n.ID, n.Name)
 
 		openData := fmt.Sprintf("nomination:%d", n.ID)
 		openBtn := tgbotapi.NewInlineKeyboardButtonData("🗳 Открыть", openData)
