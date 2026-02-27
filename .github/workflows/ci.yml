@@ -8,8 +8,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
+    name: Test (race + coverage)
     runs-on: ubuntu-latest
 
     steps:
@@ -19,7 +24,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version-file: go.mod
           cache: true
 
       - name: Install build deps (CGO for sqlite3)
@@ -29,13 +34,54 @@ jobs:
 
       - name: gofmt check
         run: |
-          test -z "$(gofmt -l .)" || (echo "Run 'make fmt'" && exit 1)
+          test -z "$(gofmt -l .)" || (echo "Run 'gofmt -w .'" && exit 1)
 
-      - name: go test
-        run: go test ./...
+      - name: go test (race + shuffle + coverage)
+        run: |
+          go test ./... -race -shuffle=on -count=1 -covermode=atomic -coverprofile=coverage.out
+          echo "### Coverage" >> "$GITHUB_STEP_SUMMARY"
+          go tool cover -func=coverage.out | tail -n 1 >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.out
+          if-no-files-found: error
+
+      # Codecov можно грузить без токена для public реп (если подключен GitHub App),
+      # а для PR из форков шаг лучше скипать, чтобы не падал CI.
+      - name: Upload coverage to Codecov
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.out
+          fail_ci_if_error: false
+          # Для private реп — добавь секрет CODECOV_TOKEN и раскомментируй:
+          # token: ${{ secrets.CODECOV_TOKEN }}
+
+  lint:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install build deps (CGO for sqlite3)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
-          version: v1.61.0
+          version: latest
           args: --timeout=5m

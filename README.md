@@ -1,6 +1,7 @@
 # tg-vote-bot
 
-[![CI](https://github.com/maaaruch/tg-vote-bot/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/maaaruch/tg-vote-bot/actions/workflows/ci.yml)
+[![CI](https://github.com/maaaruch/tg-vote-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/maaaruch/tg-vote-bot/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/maaaruch/tg-vote-bot/branch/main/graph/badge.svg)](https://codecov.io/gh/maaaruch/tg-vote-bot)
 ![Go](https://img.shields.io/badge/go-1.22+-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -80,7 +81,7 @@ cp .env.example .env
 # отредактируй .env
 
 make run
-````
+```
 
 База создастся автоматически по `DB_PATH`.
 
