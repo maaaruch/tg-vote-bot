@@ -38,7 +38,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("ошибка открытия БД: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("db close: %v", err)
+		}
+	}()
 
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)

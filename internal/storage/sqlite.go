@@ -332,7 +332,7 @@ ORDER BY votes DESC, n.id
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var results []domain.NomineeResult
 	for rows.Next() {
