@@ -316,16 +316,16 @@ func (a *App) handleCallback(cq *tgbotapi.CallbackQuery) {
 		}
 
 		var sb strings.Builder
-		sb.WriteString(fmt.Sprintf(
+		fmt.Fprintf(&sb,
 			"Результаты голосования\nКомната: %s (ID %d)\nНоминация: %s (ID %d)\n\n",
 			roomTitle, roomID, nominationName, nominationID,
-		))
+		)
 
 		if len(results) == 0 {
 			sb.WriteString("В этой номинации пока нет номинантов.\n")
 		} else {
 			for _, r := range results {
-				sb.WriteString(fmt.Sprintf("• %s (ID %d) — %d голос(ов)\n", r.Name, r.ID, r.Votes))
+				fmt.Fprintf(&sb, "• %s (ID %d) — %d голос(ов)\n", r.Name, r.ID, r.Votes)
 			}
 		}
 
@@ -492,7 +492,7 @@ func (a *App) handleMyRooms(msg *tgbotapi.Message) {
 	var sb strings.Builder
 	sb.WriteString("Твои комнаты:\n")
 	for _, r := range rooms {
-		sb.WriteString(fmt.Sprintf("• ID: %d — %s\n", r.ID, r.Title))
+		fmt.Fprintf(&sb, "• ID: %d — %s\n", r.ID, r.Title)
 	}
 	sb.WriteString("\nЧтобы зайти в комнату как участник:\n/room ID Пароль")
 
